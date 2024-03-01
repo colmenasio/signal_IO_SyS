@@ -8,14 +8,20 @@ for i=1:256
     Base_ortonormal(i,:) = Sin_printer(t,wi(i),Ai);
 end
 
+%%
 text = 'awer';
-data_matrix = dec2bin( text , 8);
-data_string = concatenate(data_matrix);
+text2 = "aodnaend";
+cosa = char(text2);
+data_matrix2 = dec2bin( cosa , 8);
+done_data = reshape(data_matrix2, 1, []);
+a = double(done_data)*2-97;
+%%
 done_data = De_bin_a_unos(data_string);
 signal = done_data * Base_ortonormal;
 
 sound(signal, fs)
 
+%%
 
 
 
