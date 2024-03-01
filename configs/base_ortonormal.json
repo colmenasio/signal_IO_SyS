@@ -1,4 +1,5 @@
 {
     "min_freq": 100,
-    "max_freq": 200
+    "max_freq": 200,
+    "word_length_t": 5 
 }
