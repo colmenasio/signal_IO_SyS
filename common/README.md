@@ -1,6 +1,6 @@
-% MODULES
+# MODULES
 
-%% BaseOrtn
+## BaseOrtn
 
 Creates, operates with and provides the interface to interact with a otronormal base of a vectorial space conssiting of sums of sines. 
 
