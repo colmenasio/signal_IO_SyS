@@ -1,3 +1,2 @@
-cl1 = CLASSES(1, 2);
-cl1.Property1 = 3
+cl1 = CLASSES(1, 3, 4, 5, 6, 5);
 cl1.method1(5)
