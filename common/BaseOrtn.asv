@@ -4,11 +4,6 @@ classdef BaseOrtn
     
     properties
         CONFIG_PATH
-        base_samples
-        MAX_FREQ
-        MIN_FREQ
-        n_of_bases
-        word_duration_t
     end
     
     methods
@@ -33,9 +28,7 @@ classdef BaseOrtn
                 disp(ME)
                 return
             end
-            %disp(val)
-            obj.base_samples = zeros()
-
+            disp(val)
         end
         
         function outputArg = method1(obj)
@@ -46,12 +39,11 @@ classdef BaseOrtn
     end
 
     methods(Static)
-        function seno = sin_printer(t_sec, frec_muest, frec_sin ,ampl_sin)
-            % Creates a sin sample array elapsing t seconds, with specific sample frec, at a specified
-            % frecuency
-            t_array = 0:1/frec_muest:t_sec;
-            seno = ampl_sin*sin(2*pi*frec_sin*t_array);
-        end
+        function seno = sin_printer(t_sec, frec,Ai)
+%     Seno_we = sin(wi*t);
+%     Seno = Seno_we/sqrt(trapz(Seno_we));
+      Seno = Ai*sin(wi*t);
+end
     end
 end
 

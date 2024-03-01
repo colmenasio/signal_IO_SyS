@@ -1,5 +1,6 @@
 {
-    "min_freq": 100,
-    "max_freq": 200,
-    "word_length_t": 5 
+    "MIN_FREQ": 100,
+    "MAX_FREQ": 200,
+    "n_of_bases": 256,
+    "word_duration_t": 5 
 }
