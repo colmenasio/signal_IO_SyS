@@ -5,6 +5,8 @@
 User interface of the whole proyect. Provides I-O for different formats (str, etc). Encodes and decodes the messages, applying error correctiona and such in the way
 
 When instaciated, it must be supplied with the base instance it will use to process the signals. If not provided with any base, it defaults to `NoneBase`, an empty placeholder base that shouldnt be used
+
+
 The validity of a base can be automatically testes with `SerDes.auto_test_base(base_instance)`
 
 ## Bases
