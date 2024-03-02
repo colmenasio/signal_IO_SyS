@@ -1,4 +1,4 @@
-classdef BaseOrtn < handle
+classdef BaseSines< handle
     % Singleton class containing the ortonormal base of sin functions
     %   The current approach is shit, instead of storing the samples of
     %   bases, its better to generate them at runtime on request
@@ -16,13 +16,13 @@ classdef BaseOrtn < handle
     end
     
     methods
-        function obj = BaseOrtn(varargin)
+        function obj = BaseSines(varargin)
             %BASEORTN Construct an instance of this class based on the
-            %configs in "root/configs/base_ortn.json"
+            %configs in "root/configs/base_sines.json"
             %   Optionally an alternative path can be specificied
             
             if isempty(varargin)
-                obj.CONFIG_PATH = "configs/base_ortn.json";
+                obj.CONFIG_PATH = "configs/base_sines.json";
             else
                 obj.CONFIG_PATH = varargin{1};
             end
@@ -91,29 +91,25 @@ classdef BaseOrtn < handle
             A = sqrt(2/obj.word_duration_t);
         end
 
-        function encoded_message = encode_str(obj, raw_str)
-            encoded_message = obj.old_arcaic_shitty_encoding(raw_str);
+        function signal = to_signal(obj, word)
+            signal = obj.old_arcaic_shitty_to_signal(word);
 
         end
 
-        function encoded_message = old_arcaic_shitty_encoding(obj, raw_str)
-            char_matrix = dec2bin(char(raw_str), 8);
-            data_string = reshape(char_matrix, 1, []);
-            symbols = double(data_string)*2-97;
-            padded_symbols = obj.add_padding(symbols, -1, obj.n_of_bases);
-            encoded_message = padded_symbols * obj.base_samples;
+        function encoded_message = old_arcaic_shitty_to_signal(obj, word)
+            encoded_message = word * obj.base_samples;
         end
 
-        function decoded_bytes = decode_to_bytes(obj, raw_signal)
-            decoded_bytes = old_arcaic_shitty_decoding(obj, raw_signal);
+        function word = from_signal(obj, signal)
+            word = old_arcaic_shitty_from_signal(obj, signal);
         end
 
-        function decoded_bytes = old_arcaic_shitty_decoding(obj, raw_signal)
+        function word = old_arcaic_shitty_from_signal(obj, signal)
             %decoded_bytes = rowfun(extract_compon, obj.base_samples, 'SeparateInputs ', false);
-            decoded_bytes = zeros(1, obj.n_of_bases);
+            word = zeros(1, obj.n_of_bases);
             for i = 1:obj.n_of_bases
                 %esto es horrible pero rowfun no funciona so...
-                decoded_bytes(1, i) = obj.prod_esc(raw_signal, obj.base_samples(i, :));
+                word(1, i) = obj.prod_esc(signal, obj.base_samples(i, :));
             end
         end
 
@@ -135,12 +131,6 @@ classdef BaseOrtn < handle
             % frecuency
             n_array = 0:(t_sec*frec_muest-1);
             seno = ampl_sin*sin(2*pi*frec_sin*n_array/frec_muest);
-        end
-
-        function new_array = add_padding(og_array, padding_symbol, desired_length)
-            new_array = zeros(1, desired_length);
-            new_array(:) = padding_symbol;
-            new_array(1,1:length(og_array)) = og_array;
         end
     end
 end
