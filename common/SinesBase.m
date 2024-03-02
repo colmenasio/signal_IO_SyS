@@ -1,34 +1,36 @@
-classdef BaseSines< handle
+classdef SinesBase < AbstBase
     % Singleton class containing the ortonormal base of sin functions
     %   The current approach is shit, instead of storing the samples of
     %   bases, its better to generate them at runtime on request
     
     properties
-        CONFIG_PATH
+        CONFIG_PATH string
         
-        MAX_FREQ
-        MIN_FREQ
-        n_of_bases
-        word_duration_t
-        sampling_frec
+        MAX_FREQ double
+        MIN_FREQ double
+        n_of_bases double 
+        word_duration_t double
+        sampling_frec double
 
         base_samples
     end
     
     methods
-        function obj = BaseSines(varargin)
+        function obj = SinesBase(varargin)
             %BASEORTN Construct an instance of this class based on the
             %configs in "root/configs/base_sines.json"
             %   Optionally an alternative path can be specificied
             
+            disp("INITIALIZING SinesBase")
             if isempty(varargin)
-                obj.CONFIG_PATH = "configs/base_sines.json";
+                obj.CONFIG_PATH = "configs/sines_base.json";
             else
                 obj.CONFIG_PATH = varargin{1};
             end
             try
                 obj.load_configs();
                 obj.initilize_bases();
+                obj.disp_summary();
             catch ME
                 switch ME.identifier
                     case 'MATLAB:FileIO:InvalidFid'
@@ -52,8 +54,8 @@ classdef BaseSines< handle
             fclose(fid); 
             val = jsondecode(str);
 
-            obj.MAX_FREQ = val.MAX_FREQ;
-            obj.MIN_FREQ = val.MIN_FREQ;
+            obj.MAX_FREQ = floor(val.MAX_FREQ);
+            obj.MIN_FREQ = ceil(val.MIN_FREQ);
             obj.n_of_bases = val.n_of_bases;
             obj.sampling_frec = val.sampling_frec;
             obj.word_duration_t = val.word_duration_t;
@@ -120,8 +122,11 @@ classdef BaseSines< handle
             result = trapz(1/obj.sampling_frec, signal1.*signal2);
         end
 
-        function play_sound(obj, signal)
-            sound(signal, obj.sampling_frec);
+        function disp_summary(obj)
+            disp("BaseSines Summary:")
+            disp("Bandwidth: "+obj.get_badwidth()+ "Hz")
+            disp("Used "+obj.n_of_bases+" out of "+obj.get_max_n_of_bases_in_bw()+" bases available in current bandwidth")
+            disp("fs : "+obj.sampling_frec+", word duration: "+obj.word_duration_t)
         end
     end
 

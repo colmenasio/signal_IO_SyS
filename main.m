@@ -1,6 +1,6 @@
-%%
+%% INSTANCIATE SERDES
 
-serdes = SerDes();
+serdes = SerDes(SinesBase);
 
 %% MANUAL TEST
 
@@ -10,4 +10,8 @@ word2 = serdes.unapply_base(signal);
 disp("Correctness Rate: "+serdes.get_word_correctness_rate(word1, word2))
 
 %% AUTOMATED TEST
-serdes.auto_test_base(BaseSines())
+serdes.auto_test_base(SinesBase)
+
+%% CLEANUP
+clear
+clc

@@ -4,17 +4,20 @@ classdef SerDes
     %   interface of sorts
     
     properties
-        word_length
-        bits_per_symbol
-        base
+        word_length double
+        bits_per_symbol double
+        base AbstBase = NoneBase
     end
     
     methods
-        function obj = SerDes()
+        function obj = SerDes(BaseClass)
+            if ~isa(BaseClass, 'AbstBase')
+                error('Input argument must be an instance of a class inheriting from SpecificAbstractClass.');
+            end
             %SERDES Builder. Does nothing for now
             obj.word_length = 256;
             obj.bits_per_symbol = 1;
-            obj.base = BaseSines();
+            obj.base = BaseClass();
         end
 
         function word = encode_bytes(obj, bytes, padding)
@@ -50,6 +53,10 @@ classdef SerDes
             % TODO change the assert to propper error handling
             assert(length(signal) == obj.base.sampling_frec * obj.base.word_duration_t)
             word = obj.base.from_signal(signal);
+        end
+
+        function play_signal(obj, signal)
+            sound(signal, obj.base.sampling_frec)
         end
     
     end
@@ -109,7 +116,7 @@ classdef SerDes
             disp("ALL TESTS PASSED: VALID BASE")
         end
         
-        function rate = SerDes.get_word_correctness_rate(word1, word2)
+        function rate = get_word_correctness_rate(word1, word2)
             rate = SerDes.get_n_of_matches(word1, word2)/length(word1);
         end
 
