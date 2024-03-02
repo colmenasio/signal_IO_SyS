@@ -7,7 +7,7 @@ User interface of the whole proyect. Provides I-O for different formats (str, et
 When instaciated, it must be supplied with the base instance it will use to process the signals. If not provided with any base, it defaults to `NoneBase`, an empty placeholder base that shouldnt be used
 
 
-The validity of a base can be automatically testedwith `SerDes.auto_test_base(base_instance)`
+The validity of a base can be automatically tested with `SerDes.auto_test_base(base_instance)`
 
 ## Bases
 
