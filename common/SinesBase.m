@@ -29,6 +29,7 @@ classdef SinesBase < AbstBase
             end
             try
                 obj.load_configs();
+                obj.validate_configs();
                 obj.initilize_bases();
                 obj.disp_summary();
             catch ME
@@ -60,6 +61,18 @@ classdef SinesBase < AbstBase
             obj.sampling_frec = val.sampling_frec;
             obj.word_duration_t = val.word_duration_t;
             disp("LOADED base_ortn.json CORRECTLY")
+        end
+
+        function validate_configs(obj)
+            positive_bw = obj.MAX_FREQ > obj.MIN_FREQ;
+            satisfies_nilquist = obj.MAX_FREQ < 2*obj.sampling_frec;
+            if ~positive_bw
+                error("ERROR WHEN LOADING CONFIGS IN SinesBase; INVALID BANDWIDTH; max_freq < min_freq")
+            end
+            if ~satisfies_nilquist
+                warning("WARNING: with the current settings in sines_base, nilqist is nor satisfied." + ...
+                    "The base may produce singals with aliasing")
+            end
         end
         
         function obj = initilize_bases(obj)
