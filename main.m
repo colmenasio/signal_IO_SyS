@@ -1,6 +1,6 @@
 %% INSTANCIATE SERDES
 
-serdes = SerDes(SinesBase);
+serdes = SerDes(SinesBase(), NoneEncScheme());
 
 %% MANUAL TEST
 

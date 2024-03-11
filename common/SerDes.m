@@ -4,24 +4,22 @@ classdef SerDes
     %   interface of sorts
     
     properties
-        word_length double
-        bits_per_symbol double
-        base AbstBase = NoneBase
-        encoding_scheme AbstEncScheme = NoneEncScheme
+        base AbstBase = NoneBase()
+        encoding_scheme AbstEncScheme = NoneEncScheme()
     end
     
     methods
-        function obj = SerDes(BaseClass, EncoderCass)
-            if ~isa(BaseClass, 'AbstBase')
+        function obj = SerDes(BaseInstance, EncoderInstance)
+            %SERDES Builder. Ensures the provided base and encoding are
+            %children of their respective abstract parents
+            if ~isa(BaseInstance, 'AbstBase')
                 error('Input base class must be an instance of a class inheriting from AbstBase.');
             end
-            if ~isa(EncoderCass, 'AbstEncScheme')
+            obj.base = BaseInstance;
+            if ~isa(EncoderInstance, 'AbstEncScheme')
                 error('Input encoder class must be an instance of a class inheriting from AbstEcnScheme.');
             end
-            %SERDES Builder. Does nothing for now
-            obj.word_length = 256;
-            obj.bits_per_symbol = 1;
-            obj.base = BaseClass();
+            obj.encoding_scheme = EncoderInstance;
         end
 
         function word = encode_bytes(obj, bytes, padding)
@@ -29,7 +27,7 @@ classdef SerDes
             % the word ready to be turned into a signal. Returns words of
             % length obj.word_length
             % aqui aplicariamos la correccion de errores y shannon y tal
-            word = obj.add_padding(bytes, padding, obj.word_length);
+            word = obj.add_padding(bytes, padding, obj.base.n_of_bases);
         end
 
         function bytes = decode_word(~, word)
