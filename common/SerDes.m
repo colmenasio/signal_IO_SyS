@@ -5,9 +5,10 @@ classdef SerDes
     
     properties
         bits_per_symbol double
-        alphabet = [-1, 1]
+        alphabet = [-3, -1, 1, 3]
         base AbstBase = NoneBase()
         encoding_scheme AbstEncScheme = NoneEncScheme()
+        component_tolerance double = 0.01
     end
     
     methods
@@ -54,12 +55,21 @@ classdef SerDes
         function bits = to_bits(obj, full_signal)
             %takes an array of signals, each row corresponding to a single signal, 
             %and returns an array of bits
-            bits_per_signal = obj.base.n_of_bases * obj.bits_per_symbol;
-            words = zeros(height(full_signal), bits_per_signal);
+            words = zeros(height(full_signal), obj.base.n_of_bases);
             for word_i = 1:height(full_signal)
-                words(word_i, :) = obj.unapply_base(words(word_i,:));
+                words(word_i, :) = obj.unapply_base(full_signal(word_i,:));
             end
             bits = obj.words_to_bits(words);
+        end
+
+        function str = to_str(obj, full_signal)
+            bits = obj.to_bits(full_signal);
+            try
+                str = char(bin2dec(reshape(bits, 8, [])')');
+            catch ME
+                disp("Catched"+ME)
+                disp("Deserializer error Could not parse bits to string (Im too tired to add propper error handling here)")
+            end
         end
 
         function play_signal(obj, signal)
@@ -95,25 +105,25 @@ classdef SerDes
             % be of full length and need no padding
             for row_i = 1:(number_of_words-1) 
                 curr_bits_indexes = (data_length*(row_i-1)+1):(data_length*row_i);
-                curr_bits = cat(2,dec2bin(word_length, length_indicator_length),bits(curr_bits_indexes));
+                curr_bits = cat(2,dec2bin(word_capacity-1, length_indicator_length),bits(curr_bits_indexes));
                 encoded_bits = obj.encoding_scheme.apply_scheme(curr_bits);
-                words(row_i,:) = obj.group_into_word(encoded_bits);
+                words(row_i,:) = obj.pack_into_word(encoded_bits);
             end
             %processes the last group of bits, adding padding to it
             remaining_bits = bits((data_length*(number_of_words-1)+1):end);
             last_group_length = length_indicator_length+length(remaining_bits);
             padded_bits = obj.add_padding(remaining_bits, '0', data_length);
-            curr_bits = cat(2,dec2bin(last_group_length, length_indicator_length),padded_bits);
+            curr_bits = cat(2,dec2bin(last_group_length-1, length_indicator_length),padded_bits);
             encoded_bits = obj.encoding_scheme.apply_scheme(curr_bits);
-            words(number_of_words,:) = obj.group_into_word(encoded_bits);
+            words(number_of_words,:) = obj.pack_into_word(encoded_bits);
         end
 
-        function word = group_into_word(obj, encoded_bits)
+        function word = pack_into_word(obj, encoded_bits)
             % Takes as an argument an array of bytes. Returns an array of
             % symbols eg:[-1, 1, 3, -3] using the obj.alphabet
             % trows an error if the parity is wrong
             try
-                groups = reshape(encoded_bits, [], obj.bits_per_symbol);
+                groups = reshape(encoded_bits, obj.bits_per_symbol, [])';
             catch ME
                 warning("AN ERROR OCCURED WHEN TRYING TO GROUP BITS INTO A WORD: " + ...
                     "THERE NUMBER OF BITS IS NOT DIVISIBLE BY THE NUMBER OF BITS IN A SYMBOL")
@@ -123,11 +133,34 @@ classdef SerDes
             word = zeros(1, n_of_symbols);
             for symbol_i = 1:n_of_symbols
                 word(1, symbol_i) = obj.alphabet(bin2dec(groups(symbol_i, :))+1);
+            
             end
         end
 
         function bits = words_to_bits(obj, words)
-            
+            word_capacity = obj.base.n_of_bases * obj.bits_per_symbol;
+            length_indicator_length = ceil(log2(word_capacity));
+            bits = '';
+            for row_i = 1:height(words)
+                encoded_bits = obj.unpack_from_word(words(row_i,:));
+                curr_bits = obj.encoding_scheme.unapply_scheme(encoded_bits);
+                message_length = bin2dec(curr_bits(1:length_indicator_length))+1;
+                data_bits_i = (length_indicator_length+1):(message_length);
+                data_bits = curr_bits(data_bits_i);
+                bits = cat(2, bits, data_bits);
+            end
+        end
+
+        function encoded_bits = unpack_from_word(obj, word)
+            % Takes as an argument an array of bytes. Returns an array of
+            % symbols eg:[-1, 1, 3, -3] using the obj.alphabet
+            % trows an error if the parity is wrong
+            n_of_bits = length(word) * obj.bits_per_symbol;
+            groups = reshape(blanks(n_of_bits), [], obj.bits_per_symbol);
+            for symbol_i = 1:length(word)
+                groups(symbol_i, :) = dec2bin(obj.find_in_alphabet(word(1, symbol_i)), obj.bits_per_symbol);
+            end
+            encoded_bits = reshape(groups', 1, []);
         end
 
         function bytes = decode_word(~, word)
@@ -148,6 +181,18 @@ classdef SerDes
             % TODO change the assert to propper error handling
             assert(length(signal) == obj.base.sampling_frec * obj.base.word_duration_t)
             word = obj.base.from_signal(signal);
+        end
+
+        function result = float_compare(obj, float1, float2)
+            result = abs(float1-float2)<obj.component_tolerance;
+        end
+
+        function index = find_in_alphabet(obj, float1)
+            index = find(arrayfun(@(x) obj.float_compare(float1, x), obj.alphabet), 1)- 1;
+            if isempty(index)
+                error("Error Deserializing. One of the components from the signal wasnt found in the deserializers alphabet, " + ...
+                    "probably due to noise. Either raise the tolerance or provide better encoding schemes")
+            end
         end
     
     end
@@ -217,6 +262,7 @@ classdef SerDes
             end
             n_of_matches = sum(abs(word1-word2)<0.001);
         end
+
     end
 end
 
