@@ -7,12 +7,16 @@ classdef SerDes
         word_length double
         bits_per_symbol double
         base AbstBase = NoneBase
+        encoding_scheme AbstEncScheme = NoneEncScheme
     end
     
     methods
-        function obj = SerDes(BaseClass)
+        function obj = SerDes(BaseClass, EncoderCass)
             if ~isa(BaseClass, 'AbstBase')
-                error('Input argument must be an instance of a class inheriting from SpecificAbstractClass.');
+                error('Input base class must be an instance of a class inheriting from AbstBase.');
+            end
+            if ~isa(EncoderCass, 'AbstEncScheme')
+                error('Input encoder class must be an instance of a class inheriting from AbstEcnScheme.');
             end
             %SERDES Builder. Does nothing for now
             obj.word_length = 256;

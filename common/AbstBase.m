@@ -10,8 +10,8 @@ classdef (Abstract) AbstBase < handle
     end
     
     methods (Abstract)
-        to_signal(word)
-        from_signal(signal)
+        to_signal(obj, word)
+        from_signal(obj, signal)
     end
 end
 
