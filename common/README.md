@@ -4,12 +4,14 @@
 
 User interface of the whole proyect. Provides I-O for different formats (str, etc). Encodes and decodes the messages, applying error correctiona and such in the way
 
-When instaciated, it must be supplied with the base instance it will use to process the signals.
-The validity of a base can be automatically testes with `SerDes.auto_test_base(base_instance)`
+When instaciated, it must be supplied with the base instance it will use to process the signals. If not provided with any base, it defaults to `NoneBase`, an empty placeholder base that shouldnt be used
+
+
+The validity of a base can be automatically tested with `SerDes.auto_test_base(base_instance)`
 
 ## Bases
 
-The abstract class Base defines classes that creates, operate and provides the interface to interact with a otronormal base of a vectorial space. 
+The abstract class `AbstBase` defines the interface that creates, operate and provides the methods to interact with a otronormal base of a vectorial space. 
 
 For example, `BasesSines.m` implements this behaviour with sinusuidal bases
 In the `configs/base_sines.json` several parameters such as the bandwidth, the dimension of the vectorial space (length of thw word), and other parameters can be configured
