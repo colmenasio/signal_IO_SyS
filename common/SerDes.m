@@ -4,6 +4,8 @@ classdef SerDes
     %   interface of sorts
     
     properties
+        CONFIG_PATH string = "configs/serdes.json" %change this to accept path as argument
+
         bits_per_symbol double
         alphabet = [-3, -1, 1, 3]
         base AbstBase = NoneBase()
@@ -15,20 +17,52 @@ classdef SerDes
         function obj = SerDes(BaseInstance, EncoderInstance)
             %SERDES Builder. Ensures the provided base and encoding are
             %children of their respective abstract parents
-            if ~isa(BaseInstance, 'AbstBase')
+            try 
+                obj.base = BaseInstance;
+                obj.encoding_scheme = EncoderInstance;
+                obj.load_configs();
+                obj.bits_per_symbol = log2(length(obj.alphabet));
+                obj.validate_params();
+                obj.disp_summary();
+            catch ME
+                disp("An error occured when initializing SERDES")
+                rethrow(ME)
+            end
+        end
+
+        function obj = load_configs(obj)
+            %LOAD_CONFIGS In-place load of the configs in obj.CONFIG_PATH
+            %Excepts MATLAB:nonExistentField
+            fid = fopen(obj.CONFIG_PATH);
+            str = char(fread(fid,inf)'); 
+            fclose(fid); 
+            val = jsondecode(str);
+
+            obj.alphabet = val.alphabet;
+            obj.component_tolerance = val.component_tolerance;
+            disp("LOADED serdes.json CORRECTLY")
+        end
+
+        function validate_params(obj)
+            if ~isa(obj.base, 'AbstBase')
                 error('Input base class must be an instance of a class inheriting from AbstBase.');
             end
-            obj.base = BaseInstance;
-            if ~isa(EncoderInstance, 'AbstEncScheme')
+            if ~isa(obj.encoding_scheme, 'AbstEncScheme')
                 error('Input encoder class must be an instance of a class inheriting from AbstEcnScheme.');
             end
-            obj.encoding_scheme = EncoderInstance;
             %check if the amount of symbols in the alphabet is ower of 2
             if sum(dec2bin(length(obj.alphabet))=='1')~=1 
                 error("The alphabet used in the SerDes must have a number of symbols that " + ...
                     "is a power of 2 (im waaaay to lazy to implement the generic solution)")
             end
-            obj.bits_per_symbol = log2(length(obj.alphabet));
+        end
+
+        function disp_summary(obj)
+            disp("SerDes Summary:")
+            disp("Alphabet:")
+            disp(obj.alphabet)
+            disp("Component tolerance: "+obj.component_tolerance)
+            disp("-----------------------------------------")
         end
 
         function signal = from_str(obj, raw_str)
@@ -161,13 +195,6 @@ classdef SerDes
                 groups(symbol_i, :) = dec2bin(obj.find_in_alphabet(word(1, symbol_i)), obj.bits_per_symbol);
             end
             encoded_bits = reshape(groups', 1, []);
-        end
-
-        function bytes = decode_word(~, word)
-            % Takes a received signal and uses the error corr to fix errors
-            % and such. Does nothing for now. Will format bytes in the
-            % future
-            bytes = word;
         end
         
         function signal = apply_base(obj, word)

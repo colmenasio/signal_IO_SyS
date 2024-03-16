@@ -140,6 +140,7 @@ classdef SinesBase < AbstBase
             disp("Bandwidth: "+obj.get_badwidth()+ "Hz")
             disp("Used "+obj.n_of_bases+" out of "+obj.get_max_n_of_bases_in_bw()+" bases available in current bandwidth")
             disp("fs : "+obj.sampling_frec+", word duration: "+obj.word_duration_t)
+            disp("-----------------------------------------")
         end
     end
 
