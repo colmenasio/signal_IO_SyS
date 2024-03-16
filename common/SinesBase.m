@@ -83,22 +83,23 @@ classdef SinesBase < AbstBase
                 error("BaseOrtn:bases_dont_fit_in_bw", "The bandwith is too small to fit that many bases")
             end
             obj.base_samples =  zeros(obj.n_of_bases, obj.word_duration_t * obj.sampling_frec);
-            frec_step = 1/(2*obj.word_duration_t);
-            frecuencies = obj.MIN_FREQ+(0:frec_step:(obj.n_of_bases-1)/(2*obj.word_duration_t));
+            frec_step_old = 1/(2*obj.word_duration_t);
+            frec_step = floor((obj.get_bandwidth()/obj.n_of_bases)*2*obj.word_duration_t)/(2*obj.word_duration_t);
+            frecuencies = obj.MIN_FREQ:frec_step:obj.MAX_FREQ;
             A = obj.get_amplitude();
             for i=1:obj.n_of_bases
                 obj.base_samples(i,:) = obj.sin_printer(obj.word_duration_t, obj.sampling_frec, frecuencies(i), A);
             end
         end
 
-        function bw = get_badwidth(obj)
+        function bw = get_bandwidth(obj)
             bw = obj.MAX_FREQ-obj.MIN_FREQ;
         end
 
         function n_max = get_max_n_of_bases_in_bw(obj)
             %Compute how many bases can fit withing the badwidth of the 
             % bases with the current values of the parameters of obj
-            n_max = 2*obj.get_badwidth*obj.word_duration_t-1;
+            n_max = 2*obj.get_bandwidth*obj.word_duration_t-1;
         end
 
         function A = get_amplitude(obj)
@@ -137,7 +138,7 @@ classdef SinesBase < AbstBase
 
         function disp_summary(obj)
             disp("BaseSines Summary:")
-            disp("Bandwidth: "+obj.get_badwidth()+ "Hz")
+            disp("Bandwidth: "+obj.get_bandwidth()+ "Hz")
             disp("Used "+obj.n_of_bases+" out of "+obj.get_max_n_of_bases_in_bw()+" bases available in current bandwidth")
             disp("fs : "+obj.sampling_frec+", word duration: "+obj.word_duration_t)
             disp("-----------------------------------------")
