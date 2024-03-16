@@ -83,9 +83,8 @@ classdef SinesBase < AbstBase
                 error("BaseOrtn:bases_dont_fit_in_bw", "The bandwith is too small to fit that many bases")
             end
             obj.base_samples =  zeros(obj.n_of_bases, obj.word_duration_t * obj.sampling_frec);
-            frec_step_old = 1/(2*obj.word_duration_t);
             frec_step = floor((obj.get_bandwidth()/obj.n_of_bases)*2*obj.word_duration_t)/(2*obj.word_duration_t);
-            frecuencies = obj.MIN_FREQ:frec_step:obj.MAX_FREQ;
+            frecuencies = obj.MIN_FREQ+frec_step*(0:(obj.n_of_bases-1));
             A = obj.get_amplitude();
             for i=1:obj.n_of_bases
                 obj.base_samples(i,:) = obj.sin_printer(obj.word_duration_t, obj.sampling_frec, frecuencies(i), A);
