@@ -1,4 +1,4 @@
-classdef SerDes
+classdef SerDes < handle
     %SERDES Serializer-Deserializer. Singleton.
     %   Handles the interaction between user and ortonormal base, acting as an
     %   interface of sorts
@@ -7,10 +7,10 @@ classdef SerDes
         CONFIG_PATH string = "configs/serdes.json" %change this to accept path as argument
 
         bits_per_symbol double
-        alphabet = [-3, -1, 1, 3]
+        alphabet
         base AbstBase = NoneBase()
         encoding_scheme AbstEncScheme = NoneEncScheme()
-        component_tolerance double = 0.01
+        component_tolerance double
     end
     
     methods
@@ -107,7 +107,12 @@ classdef SerDes
         end
 
         function play_signal(obj, signal)
-            sound(signal, obj.base.sampling_frec)
+            for row_i = 1:height(signal)
+                sound(signal(row_i, :), obj.base.sampling_frec);
+                pause(6);
+                disp("pito")
+            end
+                
         end
     end
 
