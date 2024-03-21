@@ -17,6 +17,7 @@ classdef SerDes < handle
         function obj = SerDes(BaseInstance, EncoderInstance)
             %SERDES Builder. Ensures the provided base and encoding are
             %children of their respective abstract parents
+            disp("--> INITIALIZING SinesBase")
             try 
                 obj.base = BaseInstance;
                 obj.encoding_scheme = EncoderInstance;
@@ -38,9 +39,9 @@ classdef SerDes < handle
             fclose(fid); 
             val = jsondecode(str);
 
-            obj.alphabet = val.alphabet;
+            obj.alphabet = val.alphabet';
             obj.component_tolerance = val.component_tolerance;
-            disp("LOADED serdes.json CORRECTLY")
+            disp("--> LOADED serdes.json CORRECTLY")
         end
 
         function validate_params(obj)
@@ -58,7 +59,7 @@ classdef SerDes < handle
         end
 
         function disp_summary(obj)
-            disp("SerDes Summary:")
+            disp("--> SerDes Summary:")
             disp("Alphabet:")
             disp(obj.alphabet)
             disp("Component tolerance: "+obj.component_tolerance)
@@ -110,7 +111,7 @@ classdef SerDes < handle
             for row_i = 1:height(signal)
                 sound(signal(row_i, :), obj.base.sampling_frec);
                 pause(6);
-                disp("pito")
+                disp("Reproducing the Next Part of the Signal:")
             end
                 
         end
@@ -237,46 +238,49 @@ classdef SerDes < handle
             new_array(1,1:length(og_array)) = og_array;
         end
 
-        function auto_test_base(Base)
+        function auto_test_base(base, alphabet)
             % Test the interface of a base to see if it acts as a valid
             % 'Base' class
-            base = Base();
+            if ~isa(base, "AbstBase")
+                error('The class to be tested must be an instance of a class inheriting from AbstBase.');
+            end
+            disp("TESTING BASE: "+class(base))
             try
-                disp("N of symbols per word: "+base.n_of_bases)
-                disp("CORRECT")
+                disp("--> N of symbols per word: "+base.n_of_bases)
+                disp("CORRECT"+newline)
             catch ME
-                disp("MISSING base.n_of_bases")
+                disp("MISSING base.n_of_bases"+newline)
                 disp(ME)
                 return
             end
             try
-                disp("Duration of signal per word: "+base.word_duration_t)
-                disp("CORRECT")
+                disp("--> Duration of signal per word: "+base.word_duration_t)
+                disp("CORRECT"+newline)
             catch ME
-                disp("MISSING base.word_duration_t")
+                disp("--> MISSING base.word_duration_t"+newline)
                 disp(ME)
                 return
             end
             try
-                disp("Duration of signal per word: "+base.sampling_frec)
-                disp("CORRECT")
+                disp("--> Duration of signal per word: "+base.sampling_frec)
+                disp("CORRECT"+newline)
             catch ME
-                disp("MISSING base.sampling_frec")
+                disp("--> MISSING base.sampling_frec"+newline)
                 disp(ME)
                 return
             end
             try
-                disp("Testing base.to_word / base.to_signal")
-                test_word = randi(2, [1, base.n_of_bases]);
+                disp("--> Testing base.to_word / base.to_signal")
+                test_word = arrayfun(@(x) alphabet(x), randi(length(alphabet), [1, base.n_of_bases]));
                 signal = base.to_signal(test_word);
                 resulted_word = base.from_signal(signal);
-                if SerDes.get_n_of_matches(test_word, resulted_word) < base.n_of_bases
-                    disp("when coverting from word to signal and then back to singal, the word changes." + ...
-                        "Only "+SerDes.get_n_of_matches(test_word, resulted_word)+" out of "+base.n_of_bases+" symbols were correct" + ...
-                        "INVALID BASE")
-                    return
+                if length(resulted_word) ~= length(test_word)
+                    error("The provided base is incosistent with word sizes")
                 end
-                disp("CORRECT")
+                max_dist = max(abs(test_word-resulted_word));
+                disp("With the selected alphabet, the base has aproximately +-"+max_dist+" of error per symbol"+newline+ ...
+                    "Some bases suffer from numeric error even in noiseless environments"+newline+ ...
+                    "To reduce it, either lower the max frecuencies of the base or idk"+newline)
             catch ME
                 disp("Somethiing went wrong when testing base.to_word / base.to_signal")
                 rethrow(ME)
@@ -288,11 +292,11 @@ classdef SerDes < handle
             rate = SerDes.get_n_of_matches(word1, word2)/length(word1);
         end
 
-        function n_of_matches = get_n_of_matches(word1, word2)
+        function n_of_matches = get_n_of_matches(word1, word2, tolerance)
             if length(word1) ~= length(word2)
                 error("The words provided are of different size")
             end
-            n_of_matches = sum(abs(word1-word2)<0.001);
+            n_of_matches = sum(abs(word1-word2)<tolerance);
         end
 
     end

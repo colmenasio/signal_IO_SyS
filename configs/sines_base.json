@@ -1,6 +1,6 @@
 {
     "MIN_FREQ": 400,
-    "MAX_FREQ": 3900,
+    "MAX_FREQ": 500,
     "n_of_bases": 256,
     "word_duration_t": 5,
     "sampling_frec": 8192

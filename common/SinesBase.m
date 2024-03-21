@@ -21,7 +21,7 @@ classdef SinesBase < AbstBase
             %configs in "root/configs/base_sines.json"
             %   Optionally an alternative path can be specificied
             
-            disp("INITIALIZING SinesBase")
+            disp("--> INITIALIZING SinesBase")
             if isempty(varargin)
                 obj.CONFIG_PATH = "configs/sines_base.json";
             else
@@ -60,7 +60,7 @@ classdef SinesBase < AbstBase
             obj.n_of_bases = val.n_of_bases;
             obj.sampling_frec = val.sampling_frec;
             obj.word_duration_t = val.word_duration_t;
-            disp("LOADED base_ortn.json CORRECTLY")
+            disp("--> LOADED base_ortn.json CORRECTLY")
         end
 
         function validate_configs(obj)
@@ -70,22 +70,36 @@ classdef SinesBase < AbstBase
                 error("ERROR WHEN LOADING CONFIGS IN SinesBase; INVALID BANDWIDTH; max_freq < min_freq")
             end
             if ~satisfies_nilquist
-                warning("WARNING: with the current settings in sines_base, nilqist is nor satisfied." + ...
+                error("ERROR: with the current settings in sines_base, nilqist is not satisfied."+newline+ ...
                     "The base may produce singals with aliasing")
             end
         end
         
         function obj = initilize_bases(obj)
             %INITIALIZE_BASES In-place initilizes the bases according to the
-            %parameters of obj
+            % parameters of obj
             %   The bases are stored in obj.base_samples
             if obj.get_max_n_of_bases_in_bw()<obj.n_of_bases
                 error("BaseOrtn:bases_dont_fit_in_bw", "The bandwith is too small to fit that many bases")
             end
+
+            % This is where the magic happens.
             obj.base_samples =  zeros(obj.n_of_bases, obj.word_duration_t * obj.sampling_frec);
-            frec_step = floor((obj.get_bandwidth()/obj.n_of_bases)*2*obj.word_duration_t)/(2*obj.word_duration_t);
+
+            % For the base to be ortonormal, the step in frequencies must
+            % be on the form: k/(2*obj.word_duration_t)
+            % We calculate a step in frequencies that mantain the
+            % ortornomality and results in a set of frequencies as spread
+            % as possible over the bandwith
+            k = floor((obj.get_bandwidth()/obj.n_of_bases)*2*obj.word_duration_t);
+            frec_step = k/(2*obj.word_duration_t);
             frecuencies = obj.MIN_FREQ+frec_step*(0:(obj.n_of_bases-1));
+
+            % for this base, all the singals composing it have the same
+            % amplitude
             A = obj.get_amplitude();
+
+            % we generate the samples:
             for i=1:obj.n_of_bases
                 obj.base_samples(i,:) = obj.sin_printer(obj.word_duration_t, obj.sampling_frec, frecuencies(i), A);
             end
@@ -107,20 +121,25 @@ classdef SinesBase < AbstBase
         end
 
         function signal = to_signal(obj, word)
-            signal = obj.old_arcaic_shitty_to_signal(word);
+            signal = obj.legacy_to_signal(word);
 
         end
 
-        function encoded_message = old_arcaic_shitty_to_signal(obj, word)
-            encoded_message = word * obj.base_samples;
+        function signal = legacy_to_signal(obj, word)
+            % Takes an array of reals and calculates the signal whose
+            % components over the current ortonormal base are said reals
+            % Returns an array of reals (the sampled signal)
+            signal = word * obj.base_samples;
         end
 
         function word = from_signal(obj, signal)
-            word = old_arcaic_shitty_from_signal(obj, signal);
+            word = legacy_from_signal(obj, signal);
         end
 
-        function word = old_arcaic_shitty_from_signal(obj, signal)
-            %decoded_bytes = rowfun(extract_compon, obj.base_samples, 'SeparateInputs ', false);
+        function word = legacy_from_signal(obj, signal)
+            % Takes the samples of a signal and calculates the components of said 
+            % signal over the current ortonormal base
+            % Returns an array of reals (the components)
             word = zeros(1, obj.n_of_bases);
             for i = 1:obj.n_of_bases
                 %esto es horrible pero rowfun no funciona so...
@@ -136,7 +155,7 @@ classdef SinesBase < AbstBase
         end
 
         function disp_summary(obj)
-            disp("BaseSines Summary:")
+            disp("--> BaseSines Summary:")
             disp("Bandwidth: "+obj.get_bandwidth()+ "Hz")
             disp("Used "+obj.n_of_bases+" out of "+obj.get_max_n_of_bases_in_bw()+" bases available in current bandwidth")
             disp("fs : "+obj.sampling_frec+", word duration: "+obj.word_duration_t)

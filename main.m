@@ -14,7 +14,8 @@ assert(all(message1 == message2));
 serdes.play_signal(signal)
 
 %% AUTOMATED TEST
-SerDes.auto_test_base(SinesBase)
+base = SinesBase();
+SerDes.auto_test_base(base, [-3, -1, 1, 3])
 
 %% CLEANUP
 clear
