@@ -79,12 +79,7 @@ classdef SerDes < handle
             %takes an array of bits and returns an matrix in which each row
             %is a singal corresponding to a single word
             words = obj.bits_to_words(raw_bits);
-            
-            samples_per_signal = obj.base.word_duration_t * obj.base.sampling_frec;
-            signal = zeros(height(words), samples_per_signal);
-            for row_i = 1:height(words)
-                signal(row_i,:) = obj.apply_base(words(row_i,:));
-            end
+            signal = obj.apply_base(words);
         end
 
         function bits = to_bits(obj, full_signal)
@@ -112,8 +107,17 @@ classdef SerDes < handle
                 sound(signal(row_i, :), obj.base.sampling_frec);
                 pause(6);
                 disp("Reproducing the Next Part of the Signal:")
-            end
-                
+            end 
+        end
+
+        function [unaffected_components, affected_components] = noisyfy_str(obj, message, NSR_db)
+            % Takes a message in str form and a target NSR value in db.
+            % The first return argument is the components we expect to receive
+            % The second return argument is the components we receive with the noise specified
+            signal = obj.from_str(message);
+            noisy_signal = obj.add_noise(signal, NSR_db);
+            unaffected_components = obj.unapply_base(signal);
+            affected_components = obj.unapply_base(noisy_signal);
         end
     end
 
@@ -203,17 +207,27 @@ classdef SerDes < handle
             encoded_bits = reshape(groups', 1, []);
         end
         
-        function signal = apply_base(obj, word)
-            % Takes a word and applies the base to it
+        function signal = apply_base(obj, words)
+            % Takes a matrix of words and applies the base to it
+            % returning a matrix of signals
             % TODO change the assert to propper error handling
-            assert(length(word) == obj.base.n_of_bases)
-            signal = obj.base.to_signal(word);
+            assert(length(words) == obj.base.n_of_bases)
+            samples_per_signal = obj.base.word_duration_t * obj.base.sampling_frec;
+            signal = zeros(height(words), samples_per_signal);
+            for row_i = 1:height(words)
+                signal(row_i,:) =  obj.base.to_signal(words(row_i,:));
+            end
         end
 
-        function word = unapply_base(obj, signal)
+        function words = unapply_base(obj, signal)
+            % Takes a matrix of signals and unnaplies the base to it,
+            % returning a matrix of words
             % TODO change the assert to propper error handling
             assert(length(signal) == obj.base.sampling_frec * obj.base.word_duration_t)
-            word = obj.base.from_signal(signal);
+            words = zeros(height(signal), obj.base.n_of_bases);
+            for word_i = 1:height(signal)
+                words(word_i, :) = obj.base.from_signal(signal(word_i,:));
+            end
         end
 
         function result = float_compare(obj, float1, float2)
@@ -221,13 +235,18 @@ classdef SerDes < handle
         end
 
         function index = find_in_alphabet(obj, float1)
-            index = find(arrayfun(@(x) obj.float_compare(float1, x), obj.alphabet), 1)- 1;
-            if isempty(index)
-                error("Error Deserializing. One of the components from the signal wasnt found in the deserializers alphabet, " + ...
-                    "probably due to noise. Either raise the tolerance or provide better encoding schemes")
+            if obj.component_tolerance>0
+                index = find(arrayfun(@(x) obj.float_compare(float1, x), obj.alphabet), 1) - 1;
+                if isempty(index)
+                    error("Error Deserializing. One of the components from the signal wasnt found in the deserializers alphabet, " + ...
+                    "probably due to noise. Either raise the tolerance or provide better encoding schemes. Alternatively, " + ...
+                    "change the tolerance to 0 in the configs to just pick the nearest element in the alphabet")
+                end
+            else
+                [~, index] = min(abs(obj.alphabet-float1));
+                index = index-1;
             end
         end
-    
     end
 
 
@@ -288,17 +307,32 @@ classdef SerDes < handle
             disp("ALL TESTS PASSED: VALID BASE")
         end
         
-        function rate = get_word_correctness_rate(word1, word2)
-            rate = SerDes.get_n_of_matches(word1, word2)/length(word1);
+        function total_errors = get_total_wrong_bits_str(str_1, str_2)
+            % Get the amount of bits in which 2 string differ
+            message1_bits = dec2bin(char(str_1));
+            message2_bits = dec2bin(char(str_2));
+            total_errors = sum(message1_bits == message2_bits);
         end
 
-        function n_of_matches = get_n_of_matches(word1, word2, tolerance)
-            if length(word1) ~= length(word2)
-                error("The words provided are of different size")
-            end
-            n_of_matches = sum(abs(word1-word2)<tolerance);
+        function error_rate = get_error_rate_str(str_1, str_2)
+            % Get the percentage of bits in which 2 string differ
+            message1_bits = dec2bin(char(str_1));
+            message2_bits = dec2bin(char(str_2));
+            total_errors = sum(message1_bits ~= message2_bits, "all");
+            number_of_bits = numel(message1_bits);
+            error_rate = total_errors/number_of_bits;
         end
 
+        function noisy_signal = add_noise(signal, target_SNR_db)
+            signal_power_db = 10* log10(rms(signal, "all"));
+            noise_power_db = signal_power_db -target_SNR_db;
+            noise_sample = wgn(height(signal), length(signal), noise_power_db);
+            noisy_signal = signal+noise_sample;
+        end
+
+        function do_error_scatter(broken_components)
+            scatter(reshape(broken_components, 1, []), 1)
+        end
     end
 end
 
