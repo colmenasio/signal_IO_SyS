@@ -110,7 +110,7 @@ classdef SerDes < handle
             end 
         end
 
-        function [unaffected_components, affected_components] = noisyfy_str(obj, message, NSR_db)
+        function [unaffected_components, affected_components] = noisyfy_components(obj, message, NSR_db)
             % Takes a message in str form and a target NSR value in db.
             % The first return argument is the components we expect to receive
             % The second return argument is the components we receive with the noise specified
@@ -118,6 +118,31 @@ classdef SerDes < handle
             noisy_signal = obj.add_noise(signal, NSR_db);
             unaffected_components = obj.unapply_base(signal);
             affected_components = obj.unapply_base(noisy_signal);
+        end
+
+        function [unaffected_bits, affected_bits] = noisyfy_bits(obj, message, NSR_db)
+            % Takes a message in str form and a target NSR value in db.
+            % The first return argument is the bits we expect to receive (without decoding or trimming)
+            % The second return argument is the bits we receive with the noise specified (without decoding or trimming)
+            [unaffected_components, affected_components] = obj.noisyfy_components(message, NSR_db);
+            unaffected_bits = obj.unpack_from_words(unaffected_components);
+            affected_bits = obj.unpack_from_words(affected_components);
+        end
+
+        function do_rms_sweep_plot(obj, message, nsr_range, iterations_n)
+            % Tests the average amount of errors obtained in a range of
+            % values for the Noise to Signal Ratio and plots it
+            correctness_rates = zeros([1, length(nsr_range)]);
+            for i = 1:length(nsr_range)
+                experiments_results = zeros([1, iterations_n]);
+                for experiment_n = 1:iterations_n
+                    disp("TESTING nsr = "+nsr_range(i)+" iteration number: "+experiment_n)
+                    [og_bits, broken_bits] = obj.noisyfy_bits(message, nsr_range(i));
+                    experiments_results(experiment_n) = 1-obj.get_correctness_rate_bits(og_bits, broken_bits);
+                end
+                correctness_rates(i) = mean(experiments_results);
+            end
+            semilogy(nsr_range, correctness_rates)
         end
     end
 
@@ -334,25 +359,17 @@ classdef SerDes < handle
             end
             disp("ALL TESTS PASSED: VALID BASE")
         end
-        
-        function total_errors = get_total_wrong_bits_str(str_1, str_2)
-            % Get the amount of bits in which 2 string differ
-            message1_bits = dec2bin(char(str_1));
-            message2_bits = dec2bin(char(str_2));
-            total_errors = sum(message1_bits == message2_bits);
-        end
 
-        function error_rate = get_error_rate_str(str_1, str_2)
+        function error_rate = get_correctness_rate_bits(bits_1, bits_2)
             % Get the percentage of bits in which 2 string differ
-            message1_bits = dec2bin(char(str_1));
-            message2_bits = dec2bin(char(str_2));
-            total_errors = sum(message1_bits ~= message2_bits, "all");
-            number_of_bits = numel(message1_bits);
-            error_rate = total_errors/number_of_bits;
+            assert(all(size(bits_1)==size(bits_2)))
+            total_errors = sum(bits_1 ~= bits_2, "all");
+            number_of_bits = numel(bits_1);
+            error_rate = 1-total_errors/number_of_bits;
         end
 
         function noisy_signal = add_noise(signal, target_SNR_db)
-            signal_power_db = 10* log10(rms(signal, "all"));
+            signal_power_db = 10* log10(rms(signal, "all")^2);
             noise_power_db = signal_power_db -target_SNR_db;
             noise_sample = wgn(height(signal), length(signal), noise_power_db);
             noisy_signal = signal+noise_sample;
