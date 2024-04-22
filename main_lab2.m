@@ -10,7 +10,7 @@ NSR_db = 0;
 disp("Received correctly "+100*serdes.get_correctness_rate_bits(og_bits, broken_bits)+" % of the bits")
 
 %% 1)
-
+% easter egg
 NSR_db = 2;
 
 [~, broken_components] = serdes.noisyfy_components(message, NSR_db);

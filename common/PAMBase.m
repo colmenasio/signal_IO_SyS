@@ -12,7 +12,6 @@ classdef PAMBase < AbstBase
         word_duration_t double
         sampling_frec double
         carrier_frequency double
-        time_axis
         base_samples
     end
     
@@ -52,15 +51,20 @@ classdef PAMBase < AbstBase
             %disp(val)
         end
         
-        function bw = get_bandwidth(obj)
-            bw = obj.MAX_FREQ-obj.MIN_FREQ;
+        function bw = get_max_bandwidth(obj)
+             bw = obj.MAX_FREQ-obj.MIN_FREQ;
+        end
+
+        
+        function bw = get_generated_bandwidth(obj)
+            bw = obj.sampling_frec/(2*ceil(obj.sampling_frec/(2*get_max_bandwidth(obj))));
         end
 
         function n_max = get_max_n_of_bases_in_bw(obj)
             warning("get_max_n_of_bases_in_bw not inolemented correctly")
             %Compute how many bases can fit withing the badwidth of the 
             % bases with the current values of the parameters of obj
-            n_max = 2*obj.get_bandwidth*obj.word_duration_t-1;
+            n_max = 2*obj.get_max_bandwidth*obj.word_duration_t-1;
         end
 
 
@@ -102,22 +106,29 @@ classdef PAMBase < AbstBase
             end
             
             obj.base_samples =  zeros(obj.n_of_bases, obj.word_duration_t * obj.sampling_frec);
-            obj.time_axis = (0:(obj.word_duration_t * obj.sampling_frec)-1)/obj.sampling_frec;
+            time_axis = (0:(obj.word_duration_t * obj.sampling_frec)-1)/obj.sampling_frec;
 
             for row_i=1:obj.n_of_bases
-                obj.base_samples(row_i,:)=sqrt(2*get_bandwidth(obj))*sinc(get_bandwidth(obj)*obj.time_axis-(row_i+99)).*cos(2*pi*obj.carrier_frequency*obj.time_axis);
+                obj.base_samples(row_i,:)=sqrt(2*get_generated_bandwidth(obj))*sinc(get_generated_bandwidth(obj)*time_axis-(row_i+99)).*cos(2*pi*obj.carrier_frequency*time_axis);
             end
         end
         
         function signal = to_signal(obj, word) 
             signal = word * obj.base_samples;
         end
+        
+        function word = from_signal_XD(obj, signal)
+            
+            indexes = (1:obj.n_of_bases)*obj.sampling_frec/get_generated_bandwidth(obj);
+            word = 1/sqrt(2*get_generated_bandwidth(obj))*signal(indexes);
+            
+        end
 
         function word = from_signal(obj, signal)
-            % Takes the samples of a signal and calculates the components of said 
-            % signal over the current ortonormal base
-            % Returns an array of reals (the components)
-            word = zeros(1, obj.n_of_bases);
+        % Takes the samples of a signal and calculates the components of said 
+        % signal over the current ortonormal base
+        % Returns an array of reals (the components)
+        word = zeros(1, obj.n_of_bases);
             for i = 1:obj.n_of_bases
                 word(1, i) = obj.prod_esc(signal, obj.base_samples(i, :));
             end
