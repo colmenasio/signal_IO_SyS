@@ -12,7 +12,6 @@ classdef PAMBase < AbstBase
         word_duration_t double
         sampling_frec double
         carrier_frequency double
-        sinc_bw double
         time_axis
         base_samples
     end
@@ -36,7 +35,8 @@ classdef PAMBase < AbstBase
                 obj.load_configs();
                 obj.validate_configs();
                 obj.initilize_bases();
-                obj.disp_summary();
+%                 obj.disp_summary();
+                warning("TODO: implement summary")
             catch ME
                 switch ME.identifier
                     case 'MATLAB:FileIO:InvalidFid'
@@ -51,6 +51,18 @@ classdef PAMBase < AbstBase
             end
             %disp(val)
         end
+        
+        function bw = get_bandwidth(obj)
+            bw = obj.MAX_FREQ-obj.MIN_FREQ;
+        end
+
+        function n_max = get_max_n_of_bases_in_bw(obj)
+            warning("get_max_n_of_bases_in_bw not inolemented correctly")
+            %Compute how many bases can fit withing the badwidth of the 
+            % bases with the current values of the parameters of obj
+            n_max = 2*obj.get_bandwidth*obj.word_duration_t-1;
+        end
+
 
         function obj = load_configs(obj)
             %LOAD_CONFIGS In-place load of the configs in obj.CONFIG_PATH
@@ -65,7 +77,6 @@ classdef PAMBase < AbstBase
             obj.n_of_bases = val.n_of_bases;
             obj.sampling_frec = val.sampling_frec;
             obj.word_duration_t = val.word_duration_t;
-            obj.sinc_bw = (200 + obj.n_of_bases)/obj.sampling_frec;
             obj.carrier_frequency = val.carrier_frec;
             disp("--> LOADED base_ortn.json CORRECTLY")
         end
@@ -89,13 +100,12 @@ classdef PAMBase < AbstBase
             if obj.get_max_n_of_bases_in_bw()<obj.n_of_bases
                 error("BaseOrtn:bases_dont_fit_in_bw", "The bandwith is too small to fit that many bases")
             end
-
             
             obj.base_samples =  zeros(obj.n_of_bases, obj.word_duration_t * obj.sampling_frec);
-            obj.time_axis = 0:1/obj.sampling_frec:obj.word_duration_t;
+            obj.time_axis = (0:(obj.word_duration_t * obj.sampling_frec)-1)/obj.sampling_frec;
 
-            for k=1:n
-                obj.base_samples(k,:)=sqrt(2*obj.sinc_bw)*sinc(obj.sinc_bw*obj.time_axis-(k+99)).*cos(2*pi*obj.carrier_frequency*obj.time_axis);
+            for row_i=1:obj.n_of_bases
+                obj.base_samples(row_i,:)=sqrt(2*get_bandwidth(obj))*sinc(get_bandwidth(obj)*obj.time_axis-(row_i+99)).*cos(2*pi*obj.carrier_frequency*obj.time_axis);
             end
         end
         

@@ -1,10 +1,10 @@
 %% INSTANCIATE SERDES
 
-serdes = SerDes(SinesBase(), NoneEncScheme());
+serdes = SerDes(PAMBase(), NoneEncScheme());
 
 %% MANUAL TEST
 
-message1 = 'AAAAAAAAAAAAAAAYUDAAAAAAAAAAAAa xd';
+message1 = 'AAAshshsshshsssssssssssssssssssssssssssssssssssssssssssssssssssAAAAAAAAAAAAYUDAAAAAAAAAAAAa xd';
 signal = serdes.from_str(message1);
 message2 = serdes.to_str(signal);
 assert(all(message1==message2))
