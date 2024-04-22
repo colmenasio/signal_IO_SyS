@@ -3,6 +3,5 @@
     "MAX_FREQ": 700,
     "n_of_bases": 256,
     "word_duration_t": 5,
-    "sampling_frec": 8192,
-    "carrier_frec": 1024
+    "sampling_frec": 8192
 }

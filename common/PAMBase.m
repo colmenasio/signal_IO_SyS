@@ -11,7 +11,6 @@ classdef PAMBase < AbstBase
         n_of_bases double 
         word_duration_t double
         sampling_frec double
-        carrier_frequency double
         base_samples
     end
     
@@ -51,20 +50,34 @@ classdef PAMBase < AbstBase
             %disp(val)
         end
         
-        function bw = get_max_bandwidth(obj)
+        function bw = get_og_bandwidth(obj)
              bw = obj.MAX_FREQ-obj.MIN_FREQ;
         end
 
         
-        function bw = get_generated_bandwidth(obj)
-            bw = obj.sampling_frec/(2*ceil(obj.sampling_frec/(2*get_max_bandwidth(obj))));
+        function bw = get_effective_bandwidth(obj)
+            bw = obj.sampling_frec/(2*ceil(obj.sampling_frec/(2*get_og_bandwidth(obj))));
+        end
+   
+        function carrier_frec = get_carrier_frec(obj)
+            carrier_frec = mean(obj.MIN_FREQ+obj.get_effective_bandwidth()/2);
         end
 
         function n_max = get_max_n_of_bases_in_bw(obj)
-            warning("get_max_n_of_bases_in_bw not inolemented correctly")
+            warning("get_max_n_of_bases_in_bw not inolemented correctly in PAM base")
             %Compute how many bases can fit withing the badwidth of the 
             % bases with the current values of the parameters of obj
-            n_max = 2*obj.get_max_bandwidth*obj.word_duration_t-1;
+            n_max = 2*obj.get_og_bandwidth*obj.word_duration_t-1;
+        end
+
+        function peaks = get_sincs_peaks(obj)
+            n_of_padding_samples = 120; %TODO turn this into a configuration
+            peaks = (0:(obj.n_of_bases-1))*obj.sampling_frec/get_effective_bandwidth(obj);
+            
+            % Now we spread the peaks as much as we can
+            scale_factor = floor((obj.sampling_frec*obj.word_duration_t-(2*n_of_padding_samples))/peaks(1, end));
+            assert(scale_factor > 0)  %This is what shoud be checked beforehand in get_max_n_of_bases_in_bw
+            peaks = peaks*scale_factor + n_of_padding_samples;
         end
 
 
@@ -81,7 +94,6 @@ classdef PAMBase < AbstBase
             obj.n_of_bases = val.n_of_bases;
             obj.sampling_frec = val.sampling_frec;
             obj.word_duration_t = val.word_duration_t;
-            obj.carrier_frequency = val.carrier_frec;
             disp("--> LOADED base_ortn.json CORRECTLY")
         end
 
@@ -105,11 +117,20 @@ classdef PAMBase < AbstBase
                 error("BaseOrtn:bases_dont_fit_in_bw", "The bandwith is too small to fit that many bases")
             end
             
+            W = obj.get_effective_bandwidth();
+            A = sqrt(2*W);
+            fc = obj.get_carrier_frec();
+
+            n_of_samples = obj.word_duration_t * obj.sampling_frec;
+            time = (0:(n_of_samples-1))/obj.sampling_frec; %TODO turn this into a configuration
+            sincs_peaks = W*obj.get_sincs_peaks()/obj.sampling_frec;
+
+
             obj.base_samples =  zeros(obj.n_of_bases, obj.word_duration_t * obj.sampling_frec);
-            time_axis = (0:(obj.word_duration_t * obj.sampling_frec)-1)/obj.sampling_frec;
 
             for row_i=1:obj.n_of_bases
-                obj.base_samples(row_i,:)=sqrt(2*get_generated_bandwidth(obj))*sinc(get_generated_bandwidth(obj)*time_axis-(row_i+99)).*cos(2*pi*obj.carrier_frequency*time_axis);
+                sample=A*sinc(W*time-sincs_peaks(row_i)).*cos(2*pi*fc*time);
+                obj.base_samples(row_i,:)=sample;
             end
         end
         
@@ -117,10 +138,11 @@ classdef PAMBase < AbstBase
             signal = word * obj.base_samples;
         end
         
-        function word = from_signal_XD(obj, signal)
-            
-            indexes = (1:obj.n_of_bases)*obj.sampling_frec/get_generated_bandwidth(obj);
-            word = 1/sqrt(2*get_generated_bandwidth(obj))*signal(indexes);
+        function word = from_signal_without_coseno(obj, signal)
+            % Lo que jode la perdiz es el coseno. Con conseno hay que
+            % hacer la integral, sin coseno es simplemente muestrear
+            indexes = obj.get_sincs_peaks()+1;
+            word = 1/sqrt(2*obj.get_effective_bandwidth())*signal(indexes);
             
         end
 
