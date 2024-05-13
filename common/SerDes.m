@@ -304,7 +304,7 @@ classdef SerDes < handle
             end
         end
 
-        function message = 
+%         function message = 
     end
 
 

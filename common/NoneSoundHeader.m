@@ -6,7 +6,7 @@ classdef NoneSoundHeader < AbstSoundHeader
         function play_header(obj)
             %Play the header sound
         end
-        function start_time = listen_header(obj, signal)
+        function start_time = detect_header(obj, signal)
             %Detect when the header occurs in a signal
         end
     end
