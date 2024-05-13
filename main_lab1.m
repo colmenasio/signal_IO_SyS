@@ -1,6 +1,6 @@
 %% INSTANCIATE SERDES
 
-serdes = SerDes(PAMBase(), NoneEncScheme());
+serdes = SerDes(PAMBase(), NoneEncScheme(), NoneSoundHeader());
 
 %% MANUAL TEST
 

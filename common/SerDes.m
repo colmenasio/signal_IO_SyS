@@ -10,17 +10,19 @@ classdef SerDes < handle
         alphabet
         base AbstBase = NoneBase()
         encoding_scheme AbstEncScheme = NoneEncScheme()
+        sound_header AbstSoundHeader = NoneSoundHeader()
         component_tolerance double
     end
     
     methods
-        function obj = SerDes(BaseInstance, EncoderInstance)
+        function obj = SerDes(BaseInstance, EncoderInstance, SoundHeaderInstance)
             %SERDES Builder. Ensures the provided base and encoding are
             %children of their respective abstract parents
             disp("--> INITIALIZING SinesBase")
             try 
                 obj.base = BaseInstance;
                 obj.encoding_scheme = EncoderInstance;
+                obj.sound_header = SoundHeaderInstance;
                 obj.load_configs();
                 obj.bits_per_symbol = log2(length(obj.alphabet));
                 obj.validate_params();
@@ -104,6 +106,7 @@ classdef SerDes < handle
 
         function play_signal(obj, signal)
             for row_i = 1:height(signal)
+                obj.sound_header.play_header();
                 sound(signal(row_i, :), obj.base.sampling_frec);
                 pause(6);
                 disp("Reproducing the Next Part of the Signal:")
@@ -300,6 +303,8 @@ classdef SerDes < handle
                 index = index-1;
             end
         end
+
+        function message = 
     end
 
 

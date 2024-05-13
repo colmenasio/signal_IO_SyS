@@ -1,8 +1,10 @@
 %% SETUP
 
-serdes = SerDes(PAMBase(), NoneEncScheme());
+serdes = SerDes(PAMBase(), NoneEncScheme(), NoneSoundHeader());
 message = 'Una matrioshka (en rusia-Ucrania: матрёшкa también llamada en español muñeca rusa, matrioska, mamushka o bábushka es un conjunto de muñecas tradicion...';
 
+signal = serdes.from_str(message);
+serdes.play_signal(signal);
 %% TESTING
 
 NSR_db = 0;
