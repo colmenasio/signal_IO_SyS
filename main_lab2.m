@@ -26,6 +26,9 @@ serdes.do_rms_sweep_plot(message, nsr_range, iterations_n)
 
 clear nsr_range iterations_n
 
+%% 3)
+serdes.str_from_m4a_file("Grabación_p.o.m4a")
+
 %% Cleanup
 clc
 clear
