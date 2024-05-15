@@ -305,6 +305,22 @@ classdef SerDes < handle
         end
 
 %         function message = 
+        function message = parse_received_signal(obj, signal)
+            % Takes as an argument a row vector of samples, detects headers
+            % and returns the message if a message is contained within.
+            % Returns an empty string if no message was found
+            % If more than one message is present in the signal, only the
+            % first one is returned
+            message_start_idx = obj.sound_header.detect_header(signal);
+            message_end_idx = message_start_idx+obj.base.word_duration_t*obj.base.sampling_frec-1;
+            if message_start_idx < 0 || message_end_idx > length(signal) 
+                % No message detected or the message is not fully contained
+                % in the signal argument
+                message = "";
+                return
+            end
+            message = obj.to_str(signal(message_start_idx:message_end_idx));
+        end
     end
 
 
