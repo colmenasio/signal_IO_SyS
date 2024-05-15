@@ -147,6 +147,14 @@ classdef SerDes < handle
             end
             semilogy(nsr_range, correctness_rates)
         end
+
+        function message = str_from_m4a_file(obj, filename)
+            [y, Fs] = audioread("recordings\"+filename);
+            step = Fs/obj.base.sampling_frec;
+            total_samples_parsed_signal = floor(length(y)/step);
+            signal = y(floor((1:total_samples_parsed_signal)*step));
+            message = obj.parse_received_signal(signal);
+        end
     end
 
     methods (Access = private)
